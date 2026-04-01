@@ -1,0 +1,180 @@
+// =====================================================
+//  (FINAL FIXED)
+// =====================================================
+
+var STATE = "menu";
+var W = 400;
+var H = 400;
+
+var score = 0;
+var wave  = 1;
+var lives = 3;
+
+var playerX = 200;
+var playerY = 330;
+var playerSpd = 3;
+var shipType = "viper";
+var fireRate = 15;
+
+var bullets = [];
+var enemyBullets = [];
+var shootTimer = 0;
+
+var aliens = [];
+var alienDirX = 1;
+var alienDescend = false;
+var alienFrame = 0;
+var alienFrameT = 0;
+var alienShootT = 0;
+var ALIEN_COLORS = ["pink","yellow","cyan","orange","lime"];
+
+var joyX = 70, joyY = 372, joyRadius = 32;
+var knobX = 70, knobY = 372;
+var joyActive = false, joyDX = 0;
+
+var fireBtnX = 330, fireBtnY = 372, fireBtnR = 26;
+var fireHeld = false;
+
+var cardVX = 30, cardVY = 155, cardW = 148, cardH = 175;
+var cardBX = 222, cardBY = 155;
+var btnMenuX = 130, btnMenuY = 285, btnMenuW = 140, btnMenuH = 34;
+
+// ================= DRAW HELPERS =================
+function cls(){ background("black"); }
+
+function txt(t,x,y,col,size){
+  textSize(size||12);
+  fill(col||"white");
+  textAlign(CENTER,CENTER);
+  text(t,x,y);
+}
+
+function box(x,y,w,h,col){
+  noFill(); stroke(col||"white"); rect(x,y,w,h);
+}
+
+function block(x,y,w,h,col){
+  fill(col||"white"); noStroke(); rect(x,y,w,h);
+}
+
+function rep(s,n){
+  var o="";
+  for(var i=0;i<n;i++){ o+=s; }
+  return o;
+}
+
+// ================= SPRITES =================
+function drawViper(x,y,col){
+  fill(col); noStroke();
+  rect(x-3,y-9,6,12);
+  rect(x-9,y,6,6);
+  rect(x+3,y,6,6);
+}
+
+function drawBastion(x,y,col){
+  fill(col); noStroke();
+  rect(x-6,y-6,12,12);
+  rect(x-12,y-3,6,6);
+  rect(x+6,y-3,6,6);
+}
+
+function drawAlien(x,y,col,frame){
+  fill(col); noStroke();
+  rect(x-6,y-4,12,8);
+  rect(x-3,y-8,6,4);
+}
+
+// ================= MAKE ALIENS =================
+function makeAliens(){
+  aliens=[];
+  for(var r=0;r<3;r++){
+    for(var c=0;c<7;c++){
+      aliens.push({x:40+c*50,y:50+r*40,alive:true,col:ALIEN_COLORS[r]});
+    }
+  }
+}
+
+// ================= MENU =================
+function drawMenu(){
+  cls();
+  txt("SPACE WAR",200,40,"white",22);
+  txt("CLICK TO START",200,200,"gray",12);
+}
+
+// ================= GAME =================
+function drawGame(){
+  cls();
+
+  fill("white");
+  text("Score: "+score,10,10);
+  text("Wave: "+wave,150,10);
+  text("Lives: "+lives,300,10);
+
+  for(var i=0;i<aliens.length;i++){
+    if(aliens[i].alive){
+      drawAlien(aliens[i].x,aliens[i].y,aliens[i].col);
+    }
+  }
+
+  drawViper(playerX,playerY,"lime");
+
+  for(var b=0;b<bullets.length;b++){
+    rect(bullets[b].x,bullets[b].y,3,8);
+  }
+
+  for(var e=0;e<enemyBullets.length;e++){
+    rect(enemyBullets[e].x,enemyBullets[e].y,3,8);
+  }
+}
+
+// ================= UPDATE =================
+function updateGame(){
+
+  if(keyDown("left")) playerX -= playerSpd;
+  if(keyDown("right")) playerX += playerSpd;
+
+  shootTimer++;
+  if(keyDown("space") && shootTimer > fireRate){
+    bullets.push({x:playerX,y:playerY});
+    shootTimer=0;
+  }
+
+  for(var i=0;i<bullets.length;i++){
+    bullets[i].y -= 5;
+  }
+
+  for(var j=0;j<aliens.length;j++){
+    if(aliens[j].alive){
+      aliens[j].x += alienDirX;
+    }
+  }
+}
+
+// ================= START =================
+function startGame(){
+  score=0;
+  lives=3;
+  wave=1;
+  bullets=[];
+  makeAliens();
+  STATE="game";
+}
+
+// ================= MAIN LOOP =================
+function draw(){
+
+  // CLICK FIX
+  if(mouseWentDown("leftButton")){
+    if(STATE==="menu"){
+      startGame();
+    }
+  }
+
+  if(STATE==="game"){
+    updateGame();
+    drawGame();
+  }
+  else{
+    drawMenu();
+  }
+}
