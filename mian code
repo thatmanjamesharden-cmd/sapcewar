@@ -1,421 +1,412 @@
-// =====================================================
-// SPACE WAR — Code.org Game Lab
-// Just paste this into Game Lab and hit Run
-// =====================================================
-
 var STATE = "menu";
 var W = 400;
 var H = 400;
 
 var score = 0;
-var wave  = 1;
+var wave = 1;
 var lives = 3;
 
-var playerX   = 200;
-var playerY   = 330;
+var playerX = 200;
+var playerY = 330;
 var playerSpd = 3;
-var shipType  = "viper";
-var fireRate  = 15;
+var shipType = "viper";
+var fireRate = 15;
 
-var bullets      = [];
+var bullets = [];
 var enemyBullets = [];
-var shootTimer   = 0;
+var shootTimer = 0;
 
-var aliens       = [];
-var alienDirX    = 1;
+var aliens = [];
+var alienDirX = 1;
 var alienDescend = false;
-var alienFrame   = 0;
-var alienFrameT  = 0;
-var alienShootT  = 0;
+var alienFrame = 0;
+var alienFrameT = 0;
+var alienShootT = 0;
 var ALIEN_COLORS = ["pink", "yellow", "cyan", "orange", "lime"];
 
-var joyX      = 70;
-var joyY      = 372;
+var joyX = 70;
+var joyY = 372;
 var joyRadius = 32;
-var knobX     = 70;
-var knobY     = 372;
+var knobX = 70;
+var knobY = 372;
 var joyActive = false;
-var joyDX     = 0;
+var joyDX = 0;
 
 var fireBtnX = 330;
 var fireBtnY = 372;
 var fireBtnR = 26;
 var fireHeld = false;
 
-var cardVX = 30,  cardVY = 155, cardW = 148, cardH = 175;
+var cardVX = 30, cardVY = 155, cardW = 148, cardH = 175;
 var cardBX = 222, cardBY = 155;
 var btnMenuX = 130, btnMenuY = 285, btnMenuW = 140, btnMenuH = 34;
+
+var prevMousePressed = false;
 
 // =====================================================
 // DRAW HELPERS
 // =====================================================
 function cls() {
-  background("black");
+background("black");
 }
 
 function txt(t, x, y, col, size) {
-  textSize(size || 12);
-  fill(col || "white");
-  textAlign(CENTER, CENTER);
-  text(t, x, y);
+textSize(size || 12);
+fill(col || "white");
+textAlign(CENTER, CENTER);
+text(t, x, y);
 }
 
 function txtL(t, x, y, col, size) {
-  textSize(size || 12);
-  fill(col || "white");
-  textAlign(LEFT, CENTER);
-  text(t, x, y);
+textSize(size || 12);
+fill(col || "white");
+textAlign(LEFT, CENTER);
+text(t, x, y);
 }
 
 function box(x, y, w, h, col) {
-  noFill();
-  stroke(col || "white");
-  strokeWeight(1);
-  rect(x, y, w, h);
+noFill();
+stroke(col || "white");
+strokeWeight(1);
+rect(x, y, w, h);
 }
 
 function block(x, y, w, h, col) {
-  fill(col || "white");
-  noStroke();
-  rect(x, y, w, h);
+fill(col || "white");
+noStroke();
+rect(x, y, w, h);
 }
 
 function rep(s, n) {
-  var o = "";
-  for (var i = 0; i < n; i++) o += s;
-  return o;
+var o = "";
+for (var i = 0; i < n; i++) o += s;
+return o;
 }
 
 // =====================================================
-// SHIP SPRITES
+// SHIP SPRITES — both are squares now
+// Viper = red square, Bastion = blue square
 // =====================================================
 function drawViper(x, y, col) {
-  noStroke();
-  fill(col);
-  rect(x - 3, y - 9,  6,  12);
-  rect(x - 9, y,      6,  6);
-  rect(x + 3, y,      6,  6);
-  rect(x - 1, y - 12, 3,  3);
-  fill("white");
-  rect(x - 1, y + 6,  3,  3);
+noStroke();
+fill("red");
+rect(x - 10, y - 10, 20, 20);
 }
 
 function drawBastion(x, y, col) {
-  noStroke();
-  fill(col);
-  rect(x - 6, y - 6,  12, 12);
-  rect(x - 12, y - 3, 6,  6);
-  rect(x + 6,  y - 3, 6,  6);
-  rect(x - 3,  y - 9, 6,  6);
-  fill("white");
-  rect(x - 1, y - 1,  3,  3);
+noStroke();
+fill("blue");
+rect(x - 10, y - 10, 20, 20);
 }
 
 function drawAlien(x, y, col, frame) {
-  noStroke();
-  fill(col);
-  rect(x - 6, y - 4, 12, 8);
-  rect(x - 3, y - 8, 6,  4);
-  if (frame === 0) {
-    rect(x - 9, y + 4, 4, 4);
-    rect(x + 5, y + 4, 4, 4);
-  } else {
-    rect(x - 7, y + 4, 4, 4);
-    rect(x + 3, y + 4, 4, 4);
-  }
-  fill("white");
-  rect(x - 3, y - 2, 2, 2);
-  rect(x + 1, y - 2, 2, 2);
+noStroke();
+fill(col);
+rect(x - 6, y - 4, 12, 8);
+rect(x - 3, y - 8, 6, 4);
+if (frame === 0) {
+rect(x - 9, y + 4, 4, 4);
+rect(x + 5, y + 4, 4, 4);
+} else {
+rect(x - 7, y + 4, 4, 4);
+rect(x + 3, y + 4, 4, 4);
+}
+fill("white");
+rect(x - 3, y - 2, 2, 2);
+rect(x + 1, y - 2, 2, 2);
 }
 
 // =====================================================
 // MAKE ALIENS
 // =====================================================
 function makeAliens() {
-  aliens = [];
-  var cols = 7;
-  var rows = Math.min(2 + wave, 5);
-  var startX = 28, startY = 48, spX = 52, spY = 36;
-  for (var r = 0; r < rows; r++) {
-    for (var c = 0; c < cols; c++) {
-      aliens.push({
-        x:     startX + c * spX,
-        y:     startY + r * spY,
-        alive: true,
-        col:   ALIEN_COLORS[r % ALIEN_COLORS.length]
-      });
-    }
-  }
+aliens = [];
+var cols = 7;
+var rows = Math.min(2 + wave, 5);
+var startX = 28, startY = 48, spX = 52, spY = 36;
+for (var r = 0; r < rows; r++) {
+for (var c = 0; c < cols; c++) {
+aliens.push({
+x: startX + c * spX,
+y: startY + r * spY,
+alive: true,
+col: ALIEN_COLORS[r % ALIEN_COLORS.length]
+});
+}
+}
 }
 
 // =====================================================
 // SCREENS
 // =====================================================
 function drawMenu() {
-  cls();
-  txt("SPACE WAR", 200, 38, "white", 22);
-  txt("CHOOSE YOUR SHIP", 200, 64, "gray", 10);
+cls();
+txt("SPACE WAR", 200, 38, "white", 22);
+txt("CHOOSE YOUR SHIP", 200, 64, "gray", 10);
 
-  box(cardVX, cardVY, cardW, cardH, "gray");
-  drawViper(104, 215, "pink");
-  txt("VIPER",             104, 244, "pink", 11);
-  txt("FAST + RAPID FIRE", 104, 260, "gray", 7);
-  txt("LOW ARMOR",         104, 272, "gray", 7);
-  box(50, 296, 108, 20, "pink");
-  txt("SELECT", 104, 306, "pink", 9);
+box(cardVX, cardVY, cardW, cardH, "gray");
+drawViper(104, 215, "red");
+txt("VIPER", 104, 244, "red", 11);
+txt("FAST + RAPID FIRE", 104, 260, "gray", 7);
+txt("LOW ARMOR", 104, 272, "gray", 7);
+box(50, 296, 108, 20, "red");
+txt("SELECT", 104, 306, "red", 9);
 
-  box(cardBX, cardBY, cardW, cardH, "gray");
-  drawBastion(296, 215, "cyan");
-  txt("BASTION",          296, 244, "cyan", 11);
-  txt("SLOW + LOW FIRE",  296, 260, "gray", 7);
-  txt("HIGH ARMOR",       296, 272, "gray", 7);
-  box(242, 296, 108, 20, "cyan");
-  txt("SELECT", 296, 306, "cyan", 9);
+box(cardBX, cardBY, cardW, cardH, "gray");
+drawBastion(296, 215, "blue");
+txt("BASTION", 296, 244, "blue", 11);
+txt("SLOW + LOW FIRE", 296, 260, "gray", 7);
+txt("HIGH ARMOR", 296, 272, "gray", 7);
+box(242, 296, 108, 20, "blue");
+txt("SELECT", 296, 306, "blue", 9);
 
-  txt("CLICK A SHIP TO BEGIN", 200, 392, "gray", 8);
+txt("CLICK A SHIP TO BEGIN", 200, 392, "gray", 8);
 }
 
 function drawGame() {
-  cls();
+cls();
 
-  textSize(11);
-  fill("white"); noStroke();
-  textAlign(LEFT, TOP);
-  text("SCORE: " + score, 6, 4);
-  textAlign(CENTER, TOP);
-  text("WAVE " + wave, 200, 4);
-  textAlign(RIGHT, TOP);
-  fill("red");
-  text(rep("♥", lives), 394, 4);
+textSize(11);
+fill("white"); noStroke();
+textAlign(LEFT, TOP);
+text("SCORE: " + score, 6, 4);
+textAlign(CENTER, TOP);
+text("WAVE " + wave, 200, 4);
+textAlign(RIGHT, TOP);
+fill("red");
+text(rep("♥", lives), 394, 4);
 
-  block(0, 303, 400, 2, "lime");
+block(0, 303, 400, 2, "lime");
 
-  for (var i = 0; i < aliens.length; i++) {
-    if (aliens[i].alive) drawAlien(aliens[i].x, aliens[i].y, aliens[i].col, alienFrame);
-  }
+for (var i = 0; i < aliens.length; i++) {
+if (aliens[i].alive) drawAlien(aliens[i].x, aliens[i].y, aliens[i].col, alienFrame);
+}
 
-  if (shipType === "viper") drawViper(playerX, playerY, "lime");
-  else                      drawBastion(playerX, playerY, "lime");
+if (shipType === "viper") drawViper(playerX, playerY, "red");
+else drawBastion(playerX, playerY, "blue");
 
-  noStroke();
-  fill("white");
-  for (var b = 0; b < bullets.length; b++) {
-    rect(bullets[b].x - 1, bullets[b].y - 6, 3, 10);
-  }
-  for (var e = 0; e < enemyBullets.length; e++) {
-    fill(enemyBullets[e].col);
-    rect(enemyBullets[e].x - 1, enemyBullets[e].y - 5, 3, 8);
-  }
+noStroke();
+fill("white");
+for (var b = 0; b < bullets.length; b++) {
+rect(bullets[b].x - 1, bullets[b].y - 6, 3, 10);
+}
+for (var e = 0; e < enemyBullets.length; e++) {
+fill(enemyBullets[e].col);
+rect(enemyBullets[e].x - 1, enemyBullets[e].y - 5, 3, 8);
+}
 
-  // joystick
-  noFill();
-  stroke("gray"); strokeWeight(2);
-  ellipse(joyX, joyY, joyRadius * 2, joyRadius * 2);
-  stroke("#222"); strokeWeight(1);
-  line(joyX - joyRadius + 4, joyY, joyX + joyRadius - 4, joyY);
-  line(joyX, joyY - joyRadius + 4, joyX, joyY + joyRadius - 4);
-  noStroke();
-  fill("white");
-  ellipse(knobX, knobY, 20, 20);
+// joystick
+noFill();
+stroke("gray"); strokeWeight(2);
+ellipse(joyX, joyY, joyRadius * 2, joyRadius * 2);
+stroke("#222"); strokeWeight(1);
+line(joyX - joyRadius + 4, joyY, joyX + joyRadius - 4, joyY);
+line(joyX, joyY - joyRadius + 4, joyX, joyY + joyRadius - 4);
+noStroke();
+fill("white");
+ellipse(knobX, knobY, 20, 20);
 
-  // fire button
-  fill(fireHeld ? "gray" : "white");
-  ellipse(fireBtnX, fireBtnY, fireBtnR * 2, fireBtnR * 2);
-  fill("black"); noStroke();
-  textSize(9); textAlign(CENTER, CENTER);
-  text("FIRE", fireBtnX, fireBtnY);
+// fire button
+fill(fireHeld ? "gray" : "white");
+ellipse(fireBtnX, fireBtnY, fireBtnR * 2, fireBtnR * 2);
+fill("black"); noStroke();
+textSize(9); textAlign(CENTER, CENTER);
+text("FIRE", fireBtnX, fireBtnY);
 }
 
 function drawOver(win) {
-  cls();
-  txt(win ? "YOU WIN!" : "GAME OVER", 200, 160, win ? "cyan" : "red", 24);
-  txt("SCORE: " + score, 200, 200, "white", 13);
-  txt("WAVE " + wave,    200, 222, "gray",  10);
-  box(btnMenuX, btnMenuY, btnMenuW, btnMenuH, "white");
-  txt("MENU", 200, btnMenuY + btnMenuH / 2, "white", 12);
+cls();
+txt(win ? "YOU WIN!" : "GAME OVER", 200, 160, win ? "cyan" : "red", 24);
+txt("SCORE: " + score, 200, 200, "white", 13);
+txt("WAVE " + wave, 200, 222, "gray", 10);
+box(btnMenuX, btnMenuY, btnMenuW, btnMenuH, "white");
+txt("MENU", 200, btnMenuY + btnMenuH / 2, "white", 12);
 }
 
 // =====================================================
 // GAME UPDATE
 // =====================================================
 function updateGame() {
-  var moveX = joyDX;
-  if (keyDown("left"))  moveX = -1;
-  if (keyDown("right")) moveX =  1;
-  playerX += moveX * playerSpd;
-  playerX = Math.max(12, Math.min(W - 12, playerX));
+var moveX = joyDX;
+if (keyDown("left")) moveX = -1;
+if (keyDown("right")) moveX = 1;
+playerX += moveX * playerSpd;
+playerX = Math.max(12, Math.min(W - 12, playerX));
 
-  shootTimer++;
-  if ((fireHeld || keyDown("space")) && shootTimer >= fireRate) {
-    bullets.push({ x: playerX, y: playerY - 15 });
-    shootTimer = 0;
-  }
+shootTimer++;
+if ((fireHeld || keyDown("space")) && shootTimer >= fireRate) {
+bullets.push({ x: playerX, y: playerY - 15 });
+shootTimer = 0;
+}
 
-  if (++alienFrameT > 25) { alienFrame = 1 - alienFrame; alienFrameT = 0; }
+if (++alienFrameT > 25) { alienFrame = 1 - alienFrame; alienFrameT = 0; }
 
-  var alive = [];
-  for (var i = 0; i < aliens.length; i++) {
-    if (aliens[i].alive) alive.push(aliens[i]);
-  }
+var alive = [];
+for (var i = 0; i < aliens.length; i++) {
+if (aliens[i].alive) alive.push(aliens[i]);
+}
 
-  if (alive.length === 0) {
-    wave++;
-    if (wave > 5) { STATE = "win"; return; }
-    makeAliens(); alienDirX = 1; alienDescend = false;
-    return;
-  }
+if (alive.length === 0) {
+wave++;
+if (wave > 5) { STATE = "win"; return; }
+makeAliens(); alienDirX = 1; alienDescend = false;
+return;
+}
 
-  var boost = 1 + (aliens.length - alive.length) * 0.07;
-  var aspd  = (0.5 + wave * 0.2) * boost;
-  var lEdge = 999, rEdge = 0;
-  for (var j = 0; j < alive.length; j++) {
-    if (alive[j].x - 10 < lEdge) lEdge = alive[j].x - 10;
-    if (alive[j].x + 10 > rEdge) rEdge = alive[j].x + 10;
-  }
+var boost = 1 + (aliens.length - alive.length) * 0.07;
+var aspd = (0.5 + wave * 0.2) * boost;
+var lEdge = 999, rEdge = 0;
+for (var j = 0; j < alive.length; j++) {
+if (alive[j].x - 10 < lEdge) lEdge = alive[j].x - 10;
+if (alive[j].x + 10 > rEdge) rEdge = alive[j].x + 10;
+}
 
-  if (alienDescend) {
-    for (var d = 0; d < aliens.length; d++) aliens[d].y += 14;
-    alienDirX = -alienDirX; alienDescend = false;
-  } else {
-    if (rEdge >= W - 4 && alienDirX > 0) alienDescend = true;
-    if (lEdge <= 4     && alienDirX < 0) alienDescend = true;
-    for (var m = 0; m < aliens.length; m++) aliens[m].x += aspd * alienDirX;
-  }
+if (alienDescend) {
+for (var d = 0; d < aliens.length; d++) aliens[d].y += 14;
+alienDirX = -alienDirX; alienDescend = false;
+} else {
+if (rEdge >= W - 4 && alienDirX > 0) alienDescend = true;
+if (lEdge <= 4 && alienDirX < 0) alienDescend = true;
+for (var m = 0; m < aliens.length; m++) aliens[m].x += aspd * alienDirX;
+}
 
-  var interval = Math.max(30, 90 - wave * 10);
-  if (++alienShootT > interval) {
-    alienShootT = 0;
-    var s = alive[Math.floor(Math.random() * alive.length)];
-    enemyBullets.push({ x: s.x, y: s.y + 10, col: s.col });
-  }
+var interval = Math.max(30, 90 - wave * 10);
+if (++alienShootT > interval) {
+alienShootT = 0;
+var s = alive[Math.floor(Math.random() * alive.length)];
+enemyBullets.push({ x: s.x, y: s.y + 10, col: s.col });
+}
 
-  var nb = [];
-  for (var pb = 0; pb < bullets.length; pb++) {
-    bullets[pb].y -= 7;
-    if (bullets[pb].y > 0) nb.push(bullets[pb]);
-  }
-  bullets = nb;
+var nb = [];
+for (var pb = 0; pb < bullets.length; pb++) {
+bullets[pb].y -= 7;
+if (bullets[pb].y > 0) nb.push(bullets[pb]);
+}
+bullets = nb;
 
-  var neb = [];
-  for (var ab = 0; ab < enemyBullets.length; ab++) {
-    enemyBullets[ab].y += 4;
-    if (enemyBullets[ab].y < 303) neb.push(enemyBullets[ab]);
-  }
-  enemyBullets = neb;
+var neb = [];
+for (var ab = 0; ab < enemyBullets.length; ab++) {
+enemyBullets[ab].y += 4;
+if (enemyBullets[ab].y < H) neb.push(enemyBullets[ab]);
+}
+enemyBullets = neb;
 
-  var kb = [];
-  for (var cb = 0; cb < bullets.length; cb++) {
-    var hit = false;
-    for (var ca = 0; ca < aliens.length; ca++) {
-      if (!aliens[ca].alive) continue;
-      if (Math.abs(bullets[cb].x - aliens[ca].x) < 10 &&
-          Math.abs(bullets[cb].y - aliens[ca].y) < 10) {
-        aliens[ca].alive = false;
-        score += 10 + wave * 5;
-        hit = true; break;
-      }
-    }
-    if (!hit) kb.push(bullets[cb]);
-  }
-  bullets = kb;
+var kb = [];
+for (var cb = 0; cb < bullets.length; cb++) {
+var hit = false;
+for (var ca = 0; ca < aliens.length; ca++) {
+if (!aliens[ca].alive) continue;
+if (Math.abs(bullets[cb].x - aliens[ca].x) < 10 &&
+Math.abs(bullets[cb].y - aliens[ca].y) < 10) {
+aliens[ca].alive = false;
+score += 10 + wave * 5;
+hit = true; break;
+}
+}
+if (!hit) kb.push(bullets[cb]);
+}
+bullets = kb;
 
-  var ke = [];
-  for (var hb = 0; hb < enemyBullets.length; hb++) {
-    if (Math.abs(enemyBullets[hb].x - playerX) < 12 &&
-        Math.abs(enemyBullets[hb].y - playerY) < 12) {
-      lives--;
-      if (lives <= 0) { STATE = "over"; return; }
-    } else {
-      ke.push(enemyBullets[hb]);
-    }
-  }
-  enemyBullets = ke;
+var ke = [];
+for (var hb = 0; hb < enemyBullets.length; hb++) {
+if (Math.abs(enemyBullets[hb].x - playerX) < 12 &&
+Math.abs(enemyBullets[hb].y - playerY) < 12) {
+lives--;
+if (lives <= 0) { STATE = "over"; return; }
+} else {
+ke.push(enemyBullets[hb]);
+}
+}
+enemyBullets = ke;
 
-  for (var ga = 0; ga < alive.length; ga++) {
-    if (alive[ga].y + 10 >= 303) { STATE = "over"; return; }
-  }
+for (var ga = 0; ga < alive.length; ga++) {
+if (alive[ga].y + 10 >= 303) { STATE = "over"; return; }
+}
 }
 
 // =====================================================
 // START GAME
 // =====================================================
 function startGame(type) {
-  shipType  = type;
-  playerSpd = type === "viper" ? 3.5 : 2.0;
-  fireRate  = type === "viper" ? 12  : 24;
-  lives     = type === "viper" ? 2   : 5;
-  score = 0; wave = 1;
-  playerX = 200; playerY = 330;
-  bullets = []; enemyBullets = [];
-  shootTimer = 0; alienDirX = 1; alienDescend = false;
-  alienFrame = 0; alienFrameT = 0; alienShootT = 0;
-  joyDX = 0; fireHeld = false; knobX = joyX; knobY = joyY;
-  makeAliens();
-  STATE = "game";
+shipType = type;
+playerSpd = type === "viper" ? 3.5 : 2.0;
+fireRate = type === "viper" ? 12 : 24;
+lives = type === "viper" ? 2 : 5;
+score = 0; wave = 1;
+playerX = 200; playerY = 330;
+bullets = []; enemyBullets = [];
+shootTimer = 0; alienDirX = 1; alienDescend = false;
+alienFrame = 0; alienFrameT = 0; alienShootT = 0;
+joyDX = 0; fireHeld = false; knobX = joyX; knobY = joyY;
+makeAliens();
+STATE = "game";
 }
 
 // =====================================================
 // CLICK HANDLER
 // =====================================================
 function handleClick(mx, my) {
-  if (STATE === "menu") {
-    if (mx >= cardVX && mx <= cardVX + cardW && my >= cardVY && my <= cardVY + cardH) startGame("viper");
-    if (mx >= cardBX && mx <= cardBX + cardW && my >= cardBY && my <= cardBY + cardH) startGame("bastion");
-  }
-  if (STATE === "over" || STATE === "win") {
-    if (mx >= btnMenuX && mx <= btnMenuX + btnMenuW && my >= btnMenuY && my <= btnMenuY + btnMenuH) STATE = "menu";
-  }
+if (STATE === "menu") {
+if (mx >= cardVX && mx <= cardVX + cardW && my >= cardVY && my <= cardVY + cardH) startGame("viper");
+if (mx >= cardBX && mx <= cardBX + cardW && my >= cardBY && my <= cardBY + cardH) startGame("bastion");
+}
+if (STATE === "over" || STATE === "win") {
+if (mx >= btnMenuX && mx <= btnMenuX + btnMenuW && my >= btnMenuY && my <= btnMenuY + btnMenuH) STATE = "menu";
+}
 }
 
 // =====================================================
 // JOYSTICK HANDLERS
 // =====================================================
 function handleJoyStart(mx, my) {
-  if (STATE !== "game") return;
-  var djoy  = Math.sqrt((mx - joyX) * (mx - joyX) + (my - joyY) * (my - joyY));
-  var dfire = Math.sqrt((mx - fireBtnX) * (mx - fireBtnX) + (my - fireBtnY) * (my - fireBtnY));
-  if (djoy  <= joyRadius * 1.5) joyActive = true;
-  if (dfire <= fireBtnR  * 1.5) fireHeld  = true;
+if (STATE !== "game") return;
+var djoy = Math.sqrt((mx - joyX) * (mx - joyX) + (my - joyY) * (my - joyY));
+var dfire = Math.sqrt((mx - fireBtnX) * (mx - fireBtnX) + (my - fireBtnY) * (my - fireBtnY));
+if (djoy <= joyRadius * 1.5) joyActive = true;
+if (dfire <= fireBtnR * 1.5) fireHeld = true;
 }
 
 function updateJoy(mx) {
-  if (!joyActive) return;
-  var dx = mx - joyX;
-  if (dx >  joyRadius) dx =  joyRadius;
-  if (dx < -joyRadius) dx = -joyRadius;
-  knobX = joyX + dx;
-  joyDX = dx / joyRadius;
+if (!joyActive) return;
+var dx = mx - joyX;
+if (dx > joyRadius) dx = joyRadius;
+if (dx < -joyRadius) dx = -joyRadius;
+knobX = joyX + dx;
+joyDX = dx / joyRadius;
 }
 
 function resetJoy() {
-  joyActive = false; joyDX = 0;
-  knobX = joyX; knobY = joyY;
-  fireHeld = false;
+joyActive = false; joyDX = 0;
+knobX = joyX; knobY = joyY;
+fireHeld = false;
 }
 
 // =====================================================
-// MAIN DRAW LOOP — Code.org calls draw() every frame
+// MAIN DRAW LOOP
 // =====================================================
 function draw() {
-  if (mousePressedOver(canvas)) handleJoyStart(mouseX, mouseY);
+var justClicked = mouseIsPressed && !prevMousePressed;
 
-  if (mouseIsPressed) {
-    updateJoy(mouseX);
-    var dfire = Math.sqrt((mouseX - fireBtnX) * (mouseX - fireBtnX) + (mouseY - fireBtnY) * (mouseY - fireBtnY));
-    if (dfire <= fireBtnR * 1.5) fireHeld = true;
-  } else {
-    resetJoy();
-  }
+if (mouseIsPressed) handleJoyStart(mouseX, mouseY);
 
-  if (STATE === "game") updateGame();
-
-  if      (STATE === "menu") drawMenu();
-  else if (STATE === "game") drawGame();
-  else if (STATE === "over") drawOver(false);
-  else if (STATE === "win")  drawOver(true);
+if (justClicked) {
+handleClick(mouseX, mouseY);
 }
 
-onEvent("canvas", "click", function(event) {
-  handleClick(event.offsetX, event.offsetY);
-});
+if (mouseIsPressed) {
+updateJoy(mouseX);
+var dfire = Math.sqrt((mouseX - fireBtnX) * (mouseX - fireBtnX) + (mouseY - fireBtnY) * (mouseY - fireBtnY));
+if (dfire <= fireBtnR * 1.5) fireHeld = true;
+} else {
+resetJoy();
+}
 
+prevMousePressed = mouseIsPressed;
+
+if (STATE === "game") updateGame();
+
+if (STATE === "menu") drawMenu();
+else if (STATE === "game") drawGame();
+else if (STATE === "over") drawOver(false);
+else if (STATE === "win") drawOver(true);
+}
