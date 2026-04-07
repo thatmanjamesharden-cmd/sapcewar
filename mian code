@@ -1,3 +1,11 @@
+// =====================================================
+// SPACE WAR — Code.org Game Lab
+// Game Lab library gives us: background() rect()
+// ellipse() fill() text() keyDown() mouseIsPressed
+// draw() runs 30 times per second automatically
+// =====================================================
+
+// STATE controls which screen shows each frame
 var STATE = "menu";
 var canvasWidth = 400;
 var canvasHeight = 400;
@@ -12,16 +20,20 @@ var playerSpeed = 3;
 var shipType = "viper";
 var fireRate = 15;
 
+// Arrays hold many bullets/aliens at once
 var bullets = [];
 var enemyBullets = [];
 var shootTimer = 0;
 
+// Each alien = { x, y, alive, color }
 var aliens = [];
 var alienDirectionX = 1;
 var alienDescend = false;
 var alienFrame = 0;
 var alienFrameTimer = 0;
 var alienShootTimer = 0;
+
+// ALL CAPS = this value never changes
 var ALIEN_COLORS = ["pink", "yellow", "cyan", "orange", "lime"];
 
 var joystickX = 70;
@@ -41,15 +53,19 @@ var viperCardX = 30, viperCardY = 155, viperCardWidth = 148, viperCardHeight = 1
 var bastionCardX = 222, bastionCardY = 155;
 var buttonMenuX = 130, buttonMenuY = 285, buttonMenuWidth = 140, buttonMenuHeight = 34;
 
+// Tracks last frame's mouse state so we detect one click at a time
 var prevMousePressed = false;
 
 // =====================================================
 // DRAW HELPERS
+// These wrap Game Lab library functions so we don't
+// repeat the same setup code everywhere
 // =====================================================
 function clearScreen() {
   background("black");
 }
 
+// size || 12 means: use size if given, otherwise default to 12
 function drawText(t, x, y, color, size) {
   textSize(size || 12);
   fill(color || "white");
@@ -77,6 +93,8 @@ function drawBlock(x, y, w, h, color) {
   rect(x, y, w, h);
 }
 
+// Builds a string by repeating character s, n times
+// Example: repeat("♥", 3) = "♥♥♥"
 function repeat(s, n) {
   var output = "";
   for (var i = 0; i < n; i++) output += s;
@@ -84,8 +102,7 @@ function repeat(s, n) {
 }
 
 // =====================================================
-// SHIP SPRITES
-// Viper = red square, Bastion = blue square
+// SHIP SPRITES — drawn using Game Lab rect() blocks
 // =====================================================
 function drawViper(x, y) {
   noStroke();
@@ -99,11 +116,13 @@ function drawBastion(x, y) {
   rect(x - 10, y - 10, 20, 20);
 }
 
+// frame alternates 0 and 1 to animate the alien legs
 function drawAlien(x, y, color, frame) {
   noStroke();
   fill(color);
   rect(x - 6, y - 4, 12, 8);
   rect(x - 3, y - 8, 6, 4);
+  // legs switch position based on frame to create walk animation
   if (frame === 0) {
     rect(x - 9, y + 4, 4, 4);
     rect(x + 5, y + 4, 4, 4);
@@ -122,14 +141,20 @@ function drawAlien(x, y, color, frame) {
 function makeAliens() {
   aliens = [];
   var columns = 7;
+  // rows increase each wave but cap at 5 so screen doesn't overflow
   var rows = Math.min(2 + wave, 5);
   var startX = 28, startY = 48, spacingX = 52, spacingY = 36;
+
+  // nested loop: outer = rows, inner = columns
+  // builds a grid of alien objects
   for (var r = 0; r < rows; r++) {
     for (var c = 0; c < columns; c++) {
+      // push adds a new alien object to the aliens array
       aliens.push({
         x: startX + c * spacingX,
         y: startY + r * spacingY,
         alive: true,
+        // % wraps color index so it repeats if more rows than colors
         color: ALIEN_COLORS[r % ALIEN_COLORS.length]
       });
     }
@@ -166,6 +191,7 @@ function drawMenu() {
 function drawGame() {
   clearScreen();
 
+  // draw HUD — score left, wave center, hearts right
   textSize(11);
   fill("white"); noStroke();
   textAlign(LEFT, TOP);
@@ -176,8 +202,10 @@ function drawGame() {
   fill("red");
   text(repeat("♥", lives), 394, 4);
 
+  // green line = the boundary aliens must not cross
   drawBlock(0, 303, 400, 2, "lime");
 
+  // loop draws every alien that is still alive
   for (var i = 0; i < aliens.length; i++) {
     if (aliens[i].alive) drawAlien(aliens[i].x, aliens[i].y, aliens[i].color, alienFrame);
   }
@@ -185,17 +213,20 @@ function drawGame() {
   if (shipType === "viper") drawViper(playerX, playerY);
   else drawBastion(playerX, playerY);
 
+  // loop draws every player bullet
   noStroke();
   fill("white");
   for (var b = 0; b < bullets.length; b++) {
     rect(bullets[b].x - 1, bullets[b].y - 6, 3, 10);
   }
+
+  // loop draws every enemy bullet in its alien's color
   for (var e = 0; e < enemyBullets.length; e++) {
     fill(enemyBullets[e].color);
     rect(enemyBullets[e].x - 1, enemyBullets[e].y - 5, 3, 8);
   }
 
-  // joystick
+  // draw joystick ring and crosshair using Game Lab ellipse() and line()
   noFill();
   stroke("gray"); strokeWeight(2);
   ellipse(joystickX, joystickY, joystickRadius * 2, joystickRadius * 2);
@@ -206,7 +237,7 @@ function drawGame() {
   fill("white");
   ellipse(joystickKnobX, joystickKnobY, 20, 20);
 
-  // fire button
+  // fire button turns gray while held so player gets visual feedback
   fill(fireHeld ? "gray" : "white");
   ellipse(fireButtonX, fireButtonY, fireButtonRadius * 2, fireButtonRadius * 2);
   fill("black"); noStroke();
@@ -224,28 +255,34 @@ function drawOver(win) {
 }
 
 // =====================================================
-// GAME UPDATE
+// GAME UPDATE — runs every frame while STATE = "game"
 // =====================================================
 function updateGame() {
+  // joystick gives -1 to 1, keyboard gives exactly -1 or 1
   var moveX = joystickDirectionX;
   if (keyDown("left")) moveX = -1;
   if (keyDown("right")) moveX = 1;
   playerX += moveX * playerSpeed;
+  // clamp keeps player inside the canvas edges
   playerX = Math.max(12, Math.min(canvasWidth - 12, playerX));
 
+  // fire a bullet when timer reaches fireRate
   shootTimer++;
   if ((fireHeld || keyDown("space")) && shootTimer >= fireRate) {
     bullets.push({ x: playerX, y: playerY - 15 });
     shootTimer = 0;
   }
 
+  // toggle alienFrame every 25 frames to animate alien legs
   if (++alienFrameTimer > 25) { alienFrame = 1 - alienFrame; alienFrameTimer = 0; }
 
+  // build a list of only the living aliens
   var alive = [];
   for (var i = 0; i < aliens.length; i++) {
     if (aliens[i].alive) alive.push(aliens[i]);
   }
 
+  // if no aliens left, advance to next wave
   if (alive.length === 0) {
     wave++;
     if (wave > 5) { STATE = "win"; return; }
@@ -253,30 +290,38 @@ function updateGame() {
     return;
   }
 
+  // aliens speed up as more of them are killed
   var boost = 1 + (aliens.length - alive.length) * 0.07;
   var alienSpeed = (0.5 + wave * 0.2) * boost;
+
+  // find the leftmost and rightmost alien edge
   var leftEdge = 999, rightEdge = 0;
   for (var j = 0; j < alive.length; j++) {
     if (alive[j].x - 10 < leftEdge) leftEdge = alive[j].x - 10;
     if (alive[j].x + 10 > rightEdge) rightEdge = alive[j].x + 10;
   }
 
+  // if an edge hits the wall, drop down and reverse direction
   if (alienDescend) {
     for (var d = 0; d < aliens.length; d++) aliens[d].y += 14;
     alienDirectionX = -alienDirectionX; alienDescend = false;
   } else {
     if (rightEdge >= canvasWidth - 4 && alienDirectionX > 0) alienDescend = true;
     if (leftEdge <= 4 && alienDirectionX < 0) alienDescend = true;
+    // move all aliens sideways each frame
     for (var m = 0; m < aliens.length; m++) aliens[m].x += alienSpeed * alienDirectionX;
   }
 
+  // aliens shoot faster on higher waves
   var shootInterval = Math.max(30, 90 - wave * 10);
   if (++alienShootTimer > shootInterval) {
     alienShootTimer = 0;
+    // pick a random living alien to shoot
     var shooter = alive[Math.floor(Math.random() * alive.length)];
     enemyBullets.push({ x: shooter.x, y: shooter.y + 10, color: shooter.color });
   }
 
+  // move bullets up, keep only ones still on screen
   var newBullets = [];
   for (var pb = 0; pb < bullets.length; pb++) {
     bullets[pb].y -= 7;
@@ -284,6 +329,7 @@ function updateGame() {
   }
   bullets = newBullets;
 
+  // move enemy bullets down, keep only ones still on screen
   var newEnemyBullets = [];
   for (var ab = 0; ab < enemyBullets.length; ab++) {
     enemyBullets[ab].y += 4;
@@ -291,6 +337,8 @@ function updateGame() {
   }
   enemyBullets = newEnemyBullets;
 
+  // check each bullet against each alien for a hit
+  // if hit: alien dies, score goes up, bullet removed
   var keepBullets = [];
   for (var cb = 0; cb < bullets.length; cb++) {
     var hit = false;
@@ -307,6 +355,8 @@ function updateGame() {
   }
   bullets = keepBullets;
 
+  // check each enemy bullet against the player
+  // if hit: lose a life, bullet removed
   var keepEnemyBullets = [];
   for (var hb = 0; hb < enemyBullets.length; hb++) {
     if (Math.abs(enemyBullets[hb].x - playerX) < 12 &&
@@ -319,6 +369,7 @@ function updateGame() {
   }
   enemyBullets = keepEnemyBullets;
 
+  // if any alien reaches the boundary line, game over
   for (var ga = 0; ga < alive.length; ga++) {
     if (alive[ga].y + 10 >= 303) { STATE = "over"; return; }
   }
@@ -326,9 +377,12 @@ function updateGame() {
 
 // =====================================================
 // START GAME
+// Resets every variable so nothing carries over
+// from a previous game
 // =====================================================
 function startGame(type) {
   shipType = type;
+  // ternary operator: condition ? valueIfTrue : valueIfFalse
   playerSpeed = type === "viper" ? 3.5 : 2.0;
   fireRate = type === "viper" ? 12 : 24;
   lives = type === "viper" ? 2 : 5;
@@ -345,14 +399,18 @@ function startGame(type) {
 
 // =====================================================
 // CLICK HANDLER
+// Checks if click landed inside a button rectangle
 // =====================================================
 function handleClick(mouseClickX, mouseClickY) {
   if (STATE === "menu") {
-    if (mouseClickX >= viperCardX && mouseClickX <= viperCardX + viperCardWidth && mouseClickY >= viperCardY && mouseClickY <= viperCardY + viperCardHeight) startGame("viper");
-    if (mouseClickX >= bastionCardX && mouseClickX <= bastionCardX + viperCardWidth && mouseClickY >= bastionCardY && mouseClickY <= bastionCardY + viperCardHeight) startGame("bastion");
+    if (mouseClickX >= viperCardX && mouseClickX <= viperCardX + viperCardWidth &&
+        mouseClickY >= viperCardY && mouseClickY <= viperCardY + viperCardHeight) startGame("viper");
+    if (mouseClickX >= bastionCardX && mouseClickX <= bastionCardX + viperCardWidth &&
+        mouseClickY >= bastionCardY && mouseClickY <= bastionCardY + viperCardHeight) startGame("bastion");
   }
   if (STATE === "over" || STATE === "win") {
-    if (mouseClickX >= buttonMenuX && mouseClickX <= buttonMenuX + buttonMenuWidth && mouseClickY >= buttonMenuY && mouseClickY <= buttonMenuY + buttonMenuHeight) STATE = "menu";
+    if (mouseClickX >= buttonMenuX && mouseClickX <= buttonMenuX + buttonMenuWidth &&
+        mouseClickY >= buttonMenuY && mouseClickY <= buttonMenuY + buttonMenuHeight) STATE = "menu";
   }
 }
 
@@ -360,19 +418,29 @@ function handleClick(mouseClickX, mouseClickY) {
 // JOYSTICK HANDLERS
 // =====================================================
 function handleJoystickStart(mousePositionX, mousePositionY) {
+  // only allow joystick during gameplay
   if (STATE !== "game") return;
-  var distanceToJoystick = Math.sqrt((mousePositionX - joystickX) * (mousePositionX - joystickX) + (mousePositionY - joystickY) * (mousePositionY - joystickY));
-  var distanceToFireButton = Math.sqrt((mousePositionX - fireButtonX) * (mousePositionX - fireButtonX) + (mousePositionY - fireButtonY) * (mousePositionY - fireButtonY));
+  // calculate distance from touch point to joystick center
+  var distanceToJoystick = Math.sqrt(
+    (mousePositionX - joystickX) * (mousePositionX - joystickX) +
+    (mousePositionY - joystickY) * (mousePositionY - joystickY)
+  );
+  var distanceToFireButton = Math.sqrt(
+    (mousePositionX - fireButtonX) * (mousePositionX - fireButtonX) +
+    (mousePositionY - fireButtonY) * (mousePositionY - fireButtonY)
+  );
   if (distanceToJoystick <= joystickRadius * 1.5) joystickActive = true;
   if (distanceToFireButton <= fireButtonRadius * 1.5) fireHeld = true;
 }
 
 function updateJoystick(mousePositionX) {
   if (!joystickActive) return;
+  // clamp drag distance to joystick radius
   var deltaX = mousePositionX - joystickX;
   if (deltaX > joystickRadius) deltaX = joystickRadius;
   if (deltaX < -joystickRadius) deltaX = -joystickRadius;
   joystickKnobX = joystickX + deltaX;
+  // convert to -1 to 1 range for movement
   joystickDirectionX = deltaX / joystickRadius;
 }
 
@@ -384,28 +452,37 @@ function resetJoystick() {
 
 // =====================================================
 // MAIN DRAW LOOP
+// Game Lab calls this automatically 30 times per second
+// This is the heartbeat of the entire game
 // =====================================================
 function draw() {
+  // justClicked is true only on the first frame the mouse goes down
   var justClicked = mouseIsPressed && !prevMousePressed;
 
   if (mouseIsPressed) handleJoystickStart(mouseX, mouseY);
 
+  // only trigger handleClick once per press, not every frame
   if (justClicked) {
     handleClick(mouseX, mouseY);
   }
 
   if (mouseIsPressed) {
     updateJoystick(mouseX);
-    var distanceToFireButton = Math.sqrt((mouseX - fireButtonX) * (mouseX - fireButtonX) + (mouseY - fireButtonY) * (mouseY - fireButtonY));
+    var distanceToFireButton = Math.sqrt(
+      (mouseX - fireButtonX) * (mouseX - fireButtonX) +
+      (mouseY - fireButtonY) * (mouseY - fireButtonY)
+    );
     if (distanceToFireButton <= fireButtonRadius * 1.5) fireHeld = true;
   } else {
     resetJoystick();
   }
 
+  // save this frame's mouse state for next frame's comparison
   prevMousePressed = mouseIsPressed;
 
   if (STATE === "game") updateGame();
 
+  // draw the correct screen based on STATE
   if (STATE === "menu") drawMenu();
   else if (STATE === "game") drawGame();
   else if (STATE === "over") drawOver(false);
