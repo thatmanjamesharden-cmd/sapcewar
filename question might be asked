@@ -1,0 +1,29 @@
+1. What does STATE do in your game?
+It controls which screen shows. When STATE = "menu" the menu draws, when STATE = "game" the game runs. It switches automatically when you click a ship or die.
+
+2. Why did you use Math.min(2 + wave, 5) in makeAliens()?
+So the alien rows increase each wave but never go above 5, otherwise too many aliens would overflow the screen.
+
+3. What is alienDescend for?
+It's a true/false flag. When an alien hits the wall edge it doesn't reverse immediately — alienDescend goes true, the aliens drop down 14 pixels, then they reverse direction.
+
+4. Why do you have both bullets and keepBullets arrays?
+You can't remove items from an array while looping through it. So keepBullets collects only the bullets that didn't hit anything, then replaces bullets at the end.
+
+5. What does prevMousePressed do?
+It stores last frame's mouse state so justClicked only triggers once per click, not every frame the mouse is held down.
+
+6. Why is boost calculated the way it is?
+aliens.length - alive.length tells you how many are dead. More dead aliens means higher boost, so the remaining ones speed up as you kill them.
+
+7. What's the difference between drawViper and drawBastion stats?
+Viper is faster (3.5 speed), fires quicker (12 fireRate) but only has 2 lives. Bastion is slower (2.0), fires slower (24) but has 5 lives.
+
+8. Why does updateGame() use return in several places?
+To stop the rest of the function from running. For example when all aliens are dead it resets the wave and returns early so the movement and shooting code below doesn't run on an empty array.
+
+9. What does joystickDirectionX / joystickRadius give you and why?
+It gives a value between -1 and 1. Dividing by the radius normalizes the drag distance so the player always moves at a consistent speed no matter how far you drag.
+
+10. Why does drawAlien() take a frame parameter?
+frame is either 0 or 1 and switches every 25 frames. The legs draw in slightly different positions each frame, which creates the walking animation.
