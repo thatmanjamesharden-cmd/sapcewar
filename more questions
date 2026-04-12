@@ -1,0 +1,30 @@
+1. How did you build the alien grid in makeAliens()?
+Two nested loops — the outer loop goes through rows, the inner loop goes through columns. Each combination of r and c calculates an x and y position using startX + c * spacingX and startY + r * spacingY, then pushes a new alien object into the array.
+
+2. Why did you use r % ALIEN_COLORS.length for alien colors?
+The % operator wraps the row number around the color array. So if there are 5 colors and 6 rows, row 5 wraps back to color 0 instead of crashing with an undefined color.
+
+3. How does the alien walking animation work?
+alienFrameTimer counts up every frame. When it hits 25 it flips alienFrame between 0 and 1 using 1 - alienFrame. Inside drawAlien() the legs draw in different pixel positions depending on whether frame is 0 or 1, creating the stepping effect.
+
+4. How is each alien built as a shape?
+Three rect() calls stacked together — a wide body, a narrower head on top, and two small leg blocks on the bottom that shift position each frame. Then two small white rectangles for eyes.
+
+5. How do aliens know when to drop down?
+Every frame the code finds leftEdge and rightEdge by looping through all living aliens. If rightEdge hits the canvas wall and aliens are moving right, alienDescend flips to true. Next frame they all drop 14 pixels and reverse direction.
+
+GUI questions:
+6. How did you make the HUD show score, wave and hearts?
+Three separate text() calls with different textAlign() settings — LEFT for score, CENTER for wave, RIGHT for hearts. They all sit at the same y position (y = 4) so they appear on one line across the top.
+
+7. How did you make the hearts display?
+A for loop runs lives times, adding "♥" to a string each time. So 3 lives builds "♥♥♥". That string gets drawn in red at the top right.
+
+8. How does the joystick work visually?
+Three drawing calls — ellipse() for the outer ring, two line() calls for the crosshair inside, and another smaller ellipse() for the knob. The knob's x position (joystickKnobX) updates as you drag, so it follows your finger.
+
+9. How did you make the fire button give feedback?
+A ternary operator — fill(fireHeld ? "gray" : "white"). When fireHeld is true the button fills gray, otherwise white. So it visually reacts the instant you press it.
+
+10. How did you build the ship select cards on the menu?
+drawBox() draws the outline rectangle, then drawViper() or drawBastion() draws the ship preview inside it, then multiple drawText() calls stack the name and stats below. The whole card area is also used as the click hitbox in handleClick().
